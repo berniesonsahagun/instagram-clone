@@ -1,12 +1,20 @@
-import { firebase, FieldValue } from '../lib/firebase';
+import { firebase, FieldValue } from "../lib/firebase";
 
 export async function doesUsernameExist(username) {
-  const result = await firebase.firestore().collection('users').where('username', '==', username).get();
+  const result = await firebase
+    .firestore()
+    .collection("users")
+    .where("username", "==", username)
+    .get();
   return result.docs.map((user) => user.data.length > 0);
 }
 
 export async function getUserByUsername(username) {
-  const result = await firebase.firestore().collection('users').where('username', '==', username).get();
+  const result = await firebase
+    .firestore()
+    .collection("users")
+    .where("username", "==", username)
+    .get();
 
   const user = result.docs.map((item) => ({
     ...item.data(),
@@ -17,7 +25,11 @@ export async function getUserByUsername(username) {
 }
 
 export async function getUserByUserId(userId) {
-  const result = await firebase.firestore().collection('users').where('userId', '==', userId).get();
+  const result = await firebase
+    .firestore()
+    .collection("users")
+    .where("userId", "==", userId)
+    .get();
 
   const user = result.docs.map((item) => ({
     ...item.data(),
@@ -28,35 +40,54 @@ export async function getUserByUserId(userId) {
 }
 
 export async function getSuggestedProfiles(userId, following) {
-  const result = await firebase.firestore().collection('users').limit(10).get();
+  const result = await firebase.firestore().collection("users").limit(10).get();
 
   return result.docs
     .map((user) => ({ ...user.data(), docId: user.id }))
-    .filter((profile) => profile.userId !== userId && !following.includes(profile.userId));
+    .filter(
+      (profile) =>
+        profile.userId !== userId && !following.includes(profile.userId)
+    );
 }
 
-export async function updateLoggedInUserFollowing(loggedInUserDocId, profileId, isFollowingProfile) {
+export async function updateLoggedInUserFollowing(
+  loggedInUserDocId,
+  profileId,
+  isFollowingProfile
+) {
   return firebase
     .firestore()
-    .collection('users')
+    .collection("users")
     .doc(loggedInUserDocId)
     .update({
-      following: isFollowingProfile ? FieldValue.arrayRemove(profileId) : FieldValue.arrayUnion(profileId),
+      following: isFollowingProfile
+        ? FieldValue.arrayRemove(profileId)
+        : FieldValue.arrayUnion(profileId),
     });
 }
 
-export async function updateFollowedUserFollowers(profileDocId, loggedInUserId, isFollowingProfile) {
+export async function updateFollowedUserFollowers(
+  profileDocId,
+  loggedInUserId,
+  isFollowingProfile
+) {
   return firebase
     .firestore()
-    .collection('users')
+    .collection("users")
     .doc(profileDocId)
     .update({
-      followers: isFollowingProfile ? FieldValue.arrayRemove(loggedInUserId) : FieldValue.arrayUnion(loggedInUserId),
+      followers: isFollowingProfile
+        ? FieldValue.arrayRemove(loggedInUserId)
+        : FieldValue.arrayUnion(loggedInUserId),
     });
 }
 
 export async function getPhotos(userId, following) {
-  const result = await firebase.firestore().collection('photos').where('userId', 'in', following).get();
+  const result = await firebase
+    .firestore()
+    .collection("photos")
+    .where("userId", "in", following)
+    .get();
 
   const userFollowedPhotos = result.docs.map((photo) => ({
     ...photo.data(),
@@ -82,7 +113,11 @@ export async function getPhotos(userId, following) {
 
 export async function getUserPhotosByUsername(username) {
   const [user] = await getUserByUsername(username);
-  const result = await firebase.firestore().collection('photos').where('userId', '==', user.userId).get();
+  const result = await firebase
+    .firestore()
+    .collection("photos")
+    .where("userId", "==", user.userId)
+    .get();
 
   return result.docs.map((item) => ({
     ...item.data(),
@@ -90,16 +125,40 @@ export async function getUserPhotosByUsername(username) {
   }));
 }
 
-export async function isUserFollowingProfile(loggedInUserUsername, profileUserId) {
+export async function isUserFollowingProfile(
+  loggedInUserUsername,
+  profileUserId
+) {
   const result = await firebase
     .firestore()
-    .collection('users')
-    .where('username', '==', loggedInUserUsername)
-    .where('following', 'array-contains', profileUserId)
+    .collection("users")
+    .where("username", "==", loggedInUserUsername)
+    .where("following", "array-contains", profileUserId)
     .get();
 
-  const [response = {}] = result.docs.map((item) => ({
+  const [response] = result.docs.map((item) => ({
     ...item.data(),
     docId: item.id,
   }));
+
+  return response;
+}
+
+export async function toggleFollow(
+  isFollowingProfile,
+  activeUserDocId,
+  profileDocId,
+  profileUserId,
+  followingUserId
+) {
+  await updateLoggedInUserFollowing(
+    activeUserDocId,
+    profileUserId,
+    isFollowingProfile
+  );
+  await updateFollowedUserFollowers(
+    profileDocId,
+    followingUserId,
+    isFollowingProfile
+  );
 }
