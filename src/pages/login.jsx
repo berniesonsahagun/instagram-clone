@@ -67,7 +67,7 @@ export default function Login() {
                 isInvalid && "opacity-50"
               } bg-blue-medium`}
             >
-              Log In
+              Login
             </button>
           </form>
         </div>
